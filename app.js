@@ -3,6 +3,11 @@ const { Telegraf } = require("telegraf");
 const TelegramApi = require("node-telegram-bot-api");
 const token = "2057843551:AAGybFyGuz0xrx7p2Eawq3EaU5Kzw56wNjM";
 
+const stickerStart =
+  "https://tlgrm.ru/_/stickers/51e/d68/51ed68e0-9cee-39cc-bebe-24ea15a45442/5.webp";
+const stickerAdd =
+  "https://tlgrm.ru/_/stickers/51e/d68/51ed68e0-9cee-39cc-bebe-24ea15a45442/9.webp";
+
 const bot = new TelegramApi(token, { polling: true });
 
 const categories = {
@@ -32,10 +37,7 @@ const start = () => {
     const text = msg.text;
 
     if (text === "/start") {
-      await bot.sendSticker(
-        chatId,
-        "https://tlgrm.ru/_/stickers/51e/d68/51ed68e0-9cee-39cc-bebe-24ea15a45442/5.webp"
-      );
+      await bot.sendSticker(chatId, stickerStart);
       return bot.sendMessage(
         chatId,
         "Добро пожаловать в телеграм-бот Statistics от автора alisapush!"
@@ -60,10 +62,7 @@ const start = () => {
     const data = msg.data;
     const chatId = msg.message.chat.id;
 
-    await bot.sendSticker(
-      chatId,
-      "https://tlgrm.ru/_/stickers/51e/d68/51ed68e0-9cee-39cc-bebe-24ea15a45442/9.webp"
-    );
+    await bot.sendSticker(chatId, stickerAdd);
 
     await bot.sendMessage(chatId, `Добавлено в категорию ${data}`);
     console.log(msg);
