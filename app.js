@@ -5,10 +5,27 @@ const token = "2057843551:AAGybFyGuz0xrx7p2Eawq3EaU5Kzw56wNjM";
 
 const bot = new TelegramApi(token, { polling: true });
 
+const categories = {
+  reply_markup: JSON.stringify({
+    inline_keyboard: [
+      [
+        { text: "Продукты", callback_data: "ПРОДУКТЫ" },
+        { text: "Транспорт", callback_data: "ТРАНСПОРТ" },
+      ],
+      [
+        { text: "Жилье", callback_data: "ЖИЛЬЕ" },
+        { text: "Здоровье", callback_data: "ЗДОРОВЬЕ" },
+      ],
+      [{ text: "Развлечения", callback_data: "РАЗВЛЕЧЕНИЯ" }],
+    ],
+  }),
+};
+
 const start = () => {
   bot.setMyCommands([
     { command: "/start", description: "Начальное приветствие" },
     { command: "/info", description: "Получить информацию о пользователе" },
+    { command: "/add", description: "Добавить транзакцию" },
   ]);
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -31,6 +48,23 @@ const start = () => {
         `Вас зовут ${msg.from.first_name} ${msg.from.last_name}`
       );
     }
+
+    if (text === "/add") {
+      return bot.sendMessage(chatId, "Выберете категорию", categories);
+    }
+  });
+
+  bot.on("callback_query", async (msg) => {
+    const data = msg.data;
+    const chatId = msg.message.chat.id;
+
+    await bot.sendSticker(
+      chatId,
+      "https://tlgrm.ru/_/stickers/51e/d68/51ed68e0-9cee-39cc-bebe-24ea15a45442/9.webp"
+    );
+
+    await bot.sendMessage(chatId, `Добавлено в категорию ${data}`);
+    console.log(msg);
   });
 };
 
