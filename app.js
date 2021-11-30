@@ -52,6 +52,8 @@ const start = () => {
     if (text === "/add") {
       return bot.sendMessage(chatId, "Выберете категорию", categories);
     }
+
+    return bot.sendMessage(chatId, "Я Вас не понимаю, попробуйте еще раз!");
   });
 
   bot.on("callback_query", async (msg) => {
