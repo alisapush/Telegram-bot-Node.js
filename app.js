@@ -1,5 +1,5 @@
-const { Telegraf } = require("telegraf");
-// nodemon автоматически перезагружает сервер
+// const { Telegraf } = require("telegraf");
+
 const TelegramApi = require("node-telegram-bot-api");
 const token = "2057843551:AAGybFyGuz0xrx7p2Eawq3EaU5Kzw56wNjM";
 
@@ -26,17 +26,32 @@ const categories = {
   }),
 };
 
+const transactions = [
+  // { amount: , category_id: , user_id: },
+];
+
+const users = [
+  // { user_id: "", last_amount: ""},
+];
+
 const start = () => {
   bot.setMyCommands([
     { command: "/start", description: "Начальное приветствие" },
     { command: "/info", description: "Получить информацию о пользователе" },
     { command: "/add", description: "Добавить транзакцию" },
   ]);
+
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
     if (text === "/start") {
+      let user = {
+        user_id: chatId,
+        last_amount: 0,
+      };
+      users.push(user);
+
       await bot.sendSticker(chatId, stickerStart);
       return bot.sendMessage(
         chatId,
@@ -44,29 +59,60 @@ const start = () => {
       );
     }
 
+    if (isNumeric(text)) {
+      let current_user = users.find((user) => user.user_id === chatId);
+      current_user.last_amount = Number(text);
+      return bot.sendMessage(chatId, "Выберете категорию", categories);
+    }
+
     if (text === "/info") {
-      return bot.sendMessage(
+      await bot.sendMessage(
         chatId,
         `Вас зовут ${msg.from.first_name} ${msg.from.last_name}`
       );
+      let ts = transactions.filter(
+        (transaction) => transaction.user_id === chatId
+      );
+      let mes = JSON.stringify(ts);
+
+      return bot.sendMessage(chatId, `Транзакции: ${mes}`);
     }
 
     if (text === "/add") {
-      return bot.sendMessage(chatId, "Выберете категорию", categories);
+      await bot.sendMessage(chatId, "Выберете категорию", categories);
+      // return addMoney(chatId);
     }
 
     return bot.sendMessage(chatId, "Я Вас не понимаю, попробуйте еще раз!");
   });
 
   bot.on("callback_query", async (msg) => {
-    const data = msg.data;
+    const category = msg.data;
+    console.log(msg);
     const chatId = msg.message.chat.id;
+    // await bot.sendSticker(chatId, stickerAdd);
 
-    await bot.sendSticker(chatId, stickerAdd);
+    let current_user = users.find((user) => user.user_id === chatId);
 
-    await bot.sendMessage(chatId, `Добавлено в категорию ${data}`);
+    let transaction = {
+      user_id: chatId,
+      category_id: category,
+      amount: current_user.last_amount,
+    };
+
+    transactions.push(transaction);
+
+    await bot.sendMessage(chatId, `Добавлено в категорию ${category}`);
     console.log(msg);
   });
 };
 
 start();
+
+function isNumeric(str) {
+  if (typeof str != "string") return false; // we only process strings!
+  return (
+    !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+    !isNaN(parseFloat(str))
+  ); // ...and ensure strings of whitespace fail
+}
