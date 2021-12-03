@@ -1,4 +1,5 @@
 const TelegramApi = require("node-telegram-bot-api");
+const { Client } = require("pg");
 const token = "5025111280:AAGekOPhDA29afw27pxjOevSqie7cTYQDGA";
 
 const stickerStart =
@@ -26,7 +27,7 @@ const categories = {
 
 const chats = new Map();
 
-const start = () => {
+async function startBot(db) {
   bot.setMyCommands([
     { command: "/start", description: "Начальное приветствие" },
     { command: "/info", description: "Получить информацию о транзакциях" },
@@ -48,36 +49,46 @@ const start = () => {
       chats.set(chatId, chat);
     }
 
-    switch (chat.state) {
-      case "WAITING_FOR_ACTION": {
-        if (text === "/start") {
-          bot.sendMessage(chatId, "Добро пожаловать");
-        } else if (text === "/add") {
-          chat.state = "WAITING_FOR_CATEGORY_SELECT";
-          bot.sendMessage(chatId, "Выберите категорию", categories);
-        } else {
-          bot.sendMessage(chatId, "Неверная команда");
-        }
+    try {
+      switch (chat.state) {
+        case "WAITING_FOR_ACTION": {
+          if (text === "/start") {
+            bot.sendMessage(chatId, "Добро пожаловать");
+          } else if (text === "/add") {
+            chat.state = "WAITING_FOR_CATEGORY_SELECT";
+            bot.sendMessage(chatId, "Выберите категорию", categories);
+          } else {
+            bot.sendMessage(chatId, "Неверная команда");
+          }
 
-        break;
-      }
-      case "WAITING_FOR_SUM_ENTER": {
-        if (isNumeric(text)) {
-          chat.enteredSum = text;
-          bot.sendMessage(
-            chatId,
-            `Платеж добавлен: ${chat.selectedCategory} ${chat.enteredSum}`
-          );
-          chat.state = "WAITING_FOR_ACTION";
-        } else {
-          bot.sendMessage(chatId, "Сумма введена некорректно");
+          break;
         }
-        break;
+        case "WAITING_FOR_SUM_ENTER": {
+          if (isNumeric(text)) {
+            chat.enteredSum = text;
+            await db.query({
+              text: "insert into payments(user_id, category, amount) values ($1, $2, $3)",
+              values: [userId, chat.selectedCategory, chat.enteredSum],
+            });
+            bot.sendMessage(
+              chatId,
+              `Платеж добавлен: ${chat.selectedCategory} ${chat.enteredSum}`
+            );
+            chat.state = "WAITING_FOR_ACTION";
+          } else {
+            bot.sendMessage(chatId, "Сумма введена некорректно");
+          }
+          break;
+        }
+        default: {
+          bot.sendMessage(chatId, "Что-то пошло не так");
+          chat.state = "WAITING_FOR_ACTION";
+        }
       }
-      default: {
-        bot.sendMessage(chatId, "Что-то пошло не так");
-        chat.state = "WAITING_FOR_ACTION";
-      }
+    } catch (err) {
+      bot.sendMessage(chatId, "Что-то пошло не так");
+      chat.state = "WAITING_FOR_ACTION";
+      console.error(err);
     }
   });
 
@@ -99,9 +110,14 @@ const start = () => {
       }
     }
   });
-};
+}
 
-start();
+(async function main() {
+  const db = new Client();
+  await db.connect();
+
+  startBot(db);
+})();
 
 function isNumeric(str) {
   if (typeof str != "string") return false;
