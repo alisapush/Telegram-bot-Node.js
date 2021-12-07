@@ -54,6 +54,7 @@ async function startBot(db) {
         case "WAITING_FOR_ACTION": {
           if (text === "/start") {
             bot.sendMessage(chatId, "Добро пожаловать");
+            bot.sendSticker(chatId, stickerStart);
           } else if (text === "/add") {
             chat.state = "WAITING_FOR_CATEGORY_SELECT";
             bot.sendMessage(chatId, "Выберите категорию", categories);
@@ -66,14 +67,21 @@ async function startBot(db) {
         case "WAITING_FOR_SUM_ENTER": {
           if (isNumeric(text)) {
             chat.enteredSum = text;
+            chat.currentTime = new Date();
             await db.query({
-              text: "insert into payments(user_id, category, amount) values ($1, $2, $3)",
-              values: [userId, chat.selectedCategory, chat.enteredSum],
+              text: "insert into payments(user_id, category, amount, datetime) values ($1, $2, $3, $4)",
+              values: [
+                userId,
+                chat.selectedCategory,
+                chat.enteredSum,
+                chat.currentTime,
+              ],
             });
             bot.sendMessage(
               chatId,
               `Платеж добавлен: ${chat.selectedCategory} ${chat.enteredSum}`
             );
+            bot.sendSticker(chatId, stickerAdd);
             chat.state = "WAITING_FOR_ACTION";
           } else {
             bot.sendMessage(chatId, "Сумма введена некорректно");

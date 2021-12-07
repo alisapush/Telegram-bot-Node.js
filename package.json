@@ -13,9 +13,9 @@
     "chalk": "^4.1.2",
     "express": "^4.17.1",
     "node-telegram-bot-api": "^0.54.0",
-    "nodemon": "^2.0.15", 
+    "nodemon": "^2.0.15",
+    "pg": "^8.7.1",
     "telegraf": "^4.4.2",
-
     "yargs": "^17.2.1"
   },
   "description": ""
