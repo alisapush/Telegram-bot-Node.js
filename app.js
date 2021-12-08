@@ -39,7 +39,7 @@ async function startBot(db) {
     const userId = msg.from.id;
     const text = msg.text;
 
-    console.log("chatId", chatId, "userId", userId);
+    console.log("chatId = ", chatId, "userId= ", userId);
 
     let chat;
     if (chats.has(chatId)) {
@@ -58,6 +58,11 @@ async function startBot(db) {
           } else if (text === "/add") {
             chat.state = "WAITING_FOR_CATEGORY_SELECT";
             bot.sendMessage(chatId, "Выберите категорию", categories);
+          } else if (text === "/info") {
+            bot.sendMessage(
+              chatId,
+              `Уважаваемый пользователь ${msg.from.first_name}! Чтобы посмотреть все транзакции перейдите по ссылке:`
+            );
           } else {
             bot.sendMessage(chatId, "Неверная команда");
           }
@@ -77,6 +82,7 @@ async function startBot(db) {
                 chat.currentTime,
               ],
             });
+
             bot.sendMessage(
               chatId,
               `Платеж добавлен: ${chat.selectedCategory} ${chat.enteredSum}`
@@ -123,6 +129,58 @@ async function startBot(db) {
 (async function main() {
   const db = new Client();
   await db.connect();
+
+  const express = require("express");
+  const app = express();
+
+  // server css as static
+  app.use(express.static(__dirname));
+
+  app.listen(3000, (err) => {
+    console.log(err);
+    console.log("app listening");
+  });
+
+  app.get("/", async (req, res) => {
+    let info = await db.query({
+      text: `SELECT user_id, category, amount, datetime FROM payments`,
+    });
+    console.log("info = ", info);
+
+    console.log(req.query.user);
+
+    let trs = "";
+    for (let { category, amount, datetime } of info.rows) {
+      trs += `<tr> 
+        <td>${category}</td>
+        <td>${amount}</td>
+        <td>${datetime}</td>
+      </tr>`;
+    }
+    res.send(`<!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <link rel="stylesheet" href="style.css">
+          <title>Bot statistics</title>
+        </head>
+        <body>
+          <h1>Список транзакций</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th>Сумма</th>
+                <th>Дата</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${trs}
+            <tbody>
+          </table>
+        </body>
+      </html>`);
+  });
 
   startBot(db);
 })();
