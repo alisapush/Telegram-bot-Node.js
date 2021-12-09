@@ -102,7 +102,7 @@ async function startBot(db) {
     } catch (err) {
       bot.sendMessage(chatId, "Что-то пошло не так");
       chat.state = "WAITING_FOR_ACTION";
-      console.error(err);
+      console.error("что-то пошло не так: ", err);
     }
   });
 
@@ -137,27 +137,28 @@ async function startBot(db) {
   app.use(express.static(__dirname));
 
   app.listen(3000, (err) => {
-    console.log(err);
+    console.log("app is not listen ", err);
     console.log("app listening");
   });
 
-  app.get("/", async (req, res) => {
-    let info = await db.query({
-      text: `SELECT user_id, category, amount, datetime FROM payments`,
-    });
-    console.log("info = ", info);
+  app.get("/stats/", async (req, res) => {
+    for (let chatIdCurrent of chats.keys()) {
+      console.log("chats = ", chatIdCurrent);
 
-    console.log(req.query.user);
+      let info = await db.query({
+        text: `SELECT user_id, category, amount, datetime FROM payments WHERE user_id = ${chatIdCurrent}`,
+      });
+      // console.log("info = ", info);
 
-    let trs = "";
-    for (let { category, amount, datetime } of info.rows) {
-      trs += `<tr> 
+      let trs = "";
+      for (let { category, amount, datetime } of info.rows) {
+        trs += `<tr> 
         <td>${category}</td>
         <td>${amount}</td>
         <td>${datetime}</td>
       </tr>`;
-    }
-    res.send(`<!DOCTYPE html>
+      }
+      res.send(`<!DOCTYPE html>
       <html lang="en">
         <head>
           <meta charset="utf-8">
@@ -180,6 +181,7 @@ async function startBot(db) {
           </table>
         </body>
       </html>`);
+    }
   });
 
   startBot(db);
