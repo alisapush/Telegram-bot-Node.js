@@ -61,7 +61,7 @@ async function startBot(db) {
           } else if (text === "/info") {
             bot.sendMessage(
               chatId,
-              `Уважаваемый пользователь ${msg.from.first_name}! Чтобы посмотреть все транзакции перейдите по ссылке:`
+              `Уважаваемый пользователь ${msg.from.first_name}! Чтобы посмотреть все транзакции перейдите по ссылке: http://localhost:3000/stats/${msg.chat.id}`
             );
           } else {
             bot.sendMessage(chatId, "Неверная команда");
@@ -73,6 +73,7 @@ async function startBot(db) {
           if (isNumeric(text)) {
             chat.enteredSum = text;
             chat.currentTime = new Date();
+
             await db.query({
               text: "insert into payments(user_id, category, amount, datetime) values ($1, $2, $3, $4)",
               values: [
@@ -133,31 +134,37 @@ async function startBot(db) {
   const express = require("express");
   const app = express();
 
-  // server css as static
-  app.use(express.static(__dirname));
-
   app.listen(3000, (err) => {
     console.log("app is not listen ", err);
     console.log("app listening");
   });
 
-  app.get("/stats/", async (req, res) => {
-    for (let chatIdCurrent of chats.keys()) {
-      console.log("chats = ", chatIdCurrent);
+  // server css as static
+  app.use(express.static(__dirname));
 
+  app.get(
+    "/stats/:userId",
+    // function (req, res, next) {
+    //   // req.params.userId;
+    //   next();
+    // },
+    async (req, res) => {
+      const userCurrentId = req.params.userId; // object
+      console.log("userCurrentId = ", userCurrentId);
       let info = await db.query({
-        text: `SELECT user_id, category, amount, datetime FROM payments WHERE user_id = ${chatIdCurrent}`,
+        text: `SELECT user_id, category, amount, datetime FROM payments WHERE user_id = 89442820;`,
       });
-      // console.log("info = ", info);
 
       let trs = "";
       for (let { category, amount, datetime } of info.rows) {
-        trs += `<tr> 
+        // console.log("datetime = ", datetime);
+        trs += `<tr>
         <td>${category}</td>
         <td>${amount}</td>
         <td>${datetime}</td>
       </tr>`;
       }
+
       res.send(`<!DOCTYPE html>
       <html lang="en">
         <head>
@@ -167,6 +174,7 @@ async function startBot(db) {
         </head>
         <body>
           <h1>Список транзакций</h1>
+          <h2> Сортирвоать по: категориям цене дате </h2>
           <table>
             <thead>
               <tr>
@@ -182,7 +190,7 @@ async function startBot(db) {
         </body>
       </html>`);
     }
-  });
+  );
 
   startBot(db);
 })();
