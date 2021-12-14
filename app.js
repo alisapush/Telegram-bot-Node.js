@@ -152,12 +152,13 @@ async function startBot(db) {
       const userCurrentId = req.params.userId; // object
       console.log("userCurrentId = ", userCurrentId);
       let info = await db.query({
-        text: `SELECT user_id, category, amount, datetime FROM payments WHERE user_id = 89442820;`,
+        text: `SELECT user_id, category, amount, datetime FROM payments WHERE user_id = ${userCurrentId};`,
       });
 
       let trs = "";
       for (let { category, amount, datetime } of info.rows) {
-        // console.log("datetime = ", datetime);
+        console.log("datetime = ", datetime);
+
         trs += `<tr>
         <td>${category}</td>
         <td>${amount}</td>
@@ -169,12 +170,12 @@ async function startBot(db) {
       <html lang="en">
         <head>
           <meta charset="utf-8">
-          <link rel="stylesheet" href="style.css">
+          <link rel="stylesheet" href="/stylesheet/style.css">
           <title>Bot statistics</title>
         </head>
         <body>
           <h1>Список транзакций</h1>
-          <h2> Сортирвоать по: категориям цене дате </h2>
+          <h3> Сортирвоать по: категориям / цене / дате </h3>
           <table>
             <thead>
               <tr>
